@@ -82,8 +82,7 @@ def filter_internal(data:NDArray[np.float64],model_params:NDArray[np.float64],
         forecast_time: Time point at which to discontinue weight computation and resampling
 
     Returns: 
-        The vector of partial sums of δ.  
-
+        NumPy arrays representing the distribution of the particles, the observations, the weights, and the likelihood vector. 
     '''
 
     particles = np.zeros((num_particles,model_dim,data.shape[1]),dtype = np.float64)
