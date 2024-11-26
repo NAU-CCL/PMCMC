@@ -16,3 +16,5 @@ pip install -r requirements.txt to install the requirements in the current envir
 #### VSCode
 Press ctrl-shift-p, cmd-shift-p on mac. Choose Python:Create Environment, then follow the steps. 
 
+The examples subdirectory features two files designed to serve as a simple example of the code. The first is to generate a synthetic dataset, the second performs PMCMC on the data. 
+
