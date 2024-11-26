@@ -18,3 +18,6 @@ Press ctrl-shift-p, cmd-shift-p on mac. Choose Python:Create Environment, then f
 
 The examples subdirectory features two files designed to serve as a simple example of the code. The first is to generate a synthetic dataset, the second performs PMCMC on the data. 
 
+#### <center> Folder Structure </center>
+
+
