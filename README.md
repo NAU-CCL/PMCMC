@@ -26,7 +26,8 @@ but PMCMC is quite computationally intensive.
 
 Experiment_1 contains the files required to replicate the results and figures from Experiment 1 in the paper. To replicate the results run exp_1_job.sh and once finished, viz.ipynb to create the plots. 
 
-Experiment_real_data_2022 and Experiment_real_data_2023 are folders containing the files to replicate the results on the real datasets from Arizona. The only difference is the data file in the directory. Once the jobs are completed, the trace plots can be generated using the .sh file job_plot.sh
+Experiment_real_data_2022 and Experiment_real_data_2023 are folders containing the files to replicate the results on the real datasets from Arizona. Run real_data_job.sh to replicate the results.
+Once the jobs are completed, the trace plots can be generated using the .sh file job_plot.sh
 
 
 
