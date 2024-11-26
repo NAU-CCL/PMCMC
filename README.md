@@ -16,5 +16,17 @@ pip install -r requirements.txt to install the requirements in the current envir
 #### VSCode
 Press ctrl-shift-p, cmd-shift-p on mac. Choose Python:Create Environment, then follow the steps. 
 
+#### <center> Folder Structure </center>
+
 The examples subdirectory features two files designed to serve as a simple example of the code. The first is to generate a synthetic dataset, the second performs PMCMC on the data. 
+
+##### Note 
+The .sh files can be run using sbatch job_file.sh (job_file is a placeholder for the filename)
+
+Experiment_1 contains the files required to replicate the results and figures from Experiment 1 in the paper. The bash script is designed to be run in a SLURM HPC environment. The python script can be run on its own,
+but PMCMC is quite computationally intensive. 
+
+Experiment_real_data_2022 and Experiment_real_data_2023 are folders containing the files to replicate the results on the real datasets from Arizona. The only difference is the data file in the directory. 
+
+
 
