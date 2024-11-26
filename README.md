@@ -13,3 +13,6 @@ virtualenv venv to create your new environment (called 'venv' here) <br>
 source venv/bin/activate to enter the virtual environment <br>
 pip install -r requirements.txt to install the requirements in the current environment
 
+#### VSCode
+Press ctrl-shift-p, cmd-shift-p on mac. Choose Python:Create Environment, then follow the steps. 
+
