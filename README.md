@@ -2,6 +2,6 @@ Estimating Dynamic Transmission Rates with Black-Karasinski Process in Stochasti
 
 This codebase can be used to replicate our results from the paper. 
 
-Setup
+### <center> Setup </center> 
 
 It is 
