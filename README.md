@@ -26,7 +26,7 @@ The .sh files can be run using sbatch job_file.sh (job_file is a placeholder for
 Experiment_1 contains the files required to replicate the results and figures from Experiment 1 in the paper. The bash script is designed to be run in a SLURM HPC environment. The python script can be run on its own,
 but PMCMC is quite computationally intensive. 
 
-Experiment_real_data_2022 and Experiment_real_data_2023 are folders containing the files to replicate the results on the real datasets from Arizona. The only difference is the data file in the directory. 
+Experiment_real_data_2022 and Experiment_real_data_2023 are folders containing the files to replicate the results on the real datasets from Arizona. The only difference is the data file in the directory. Once the jobs are completed, the trace plots can be generated using the .sh file job_plot.sh
 
 
 
