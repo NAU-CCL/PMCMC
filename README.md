@@ -21,10 +21,10 @@ Press ctrl-shift-p, cmd-shift-p on mac. Choose Python:Create Environment, then f
 The examples subdirectory features two files designed to serve as a simple example of the code. The first is to generate a synthetic dataset, the second performs PMCMC on the data. 
 
 ##### Note 
-The .sh files can be run using sbatch job_file.sh (job_file is a placeholder for the filename)
-
-Experiment_1 contains the files required to replicate the results and figures from Experiment 1 in the paper. The bash script is designed to be run in a SLURM HPC environment. The python script can be run on its own,
+The .sh files can be run using sbatch job_file.sh (job_file is a placeholder for the filename) The bash scripts are designed to be run in a SLURM HPC environment. The python scripts can be run on their own,
 but PMCMC is quite computationally intensive. 
+
+Experiment_1 contains the files required to replicate the results and figures from Experiment 1 in the paper. To replicate the results run exp_1_job.sh and once finished, viz.ipynb to create the plots. 
 
 Experiment_real_data_2022 and Experiment_real_data_2023 are folders containing the files to replicate the results on the real datasets from Arizona. The only difference is the data file in the directory. Once the jobs are completed, the trace plots can be generated using the .sh file job_plot.sh
 
