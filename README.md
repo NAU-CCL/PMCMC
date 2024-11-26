@@ -8,8 +8,8 @@ It is recomennded to use a python virtual environment to setup the python enviro
 
 #### Command line
 
-pip install virtualenv (if you don't already have virtualenv installed) \\
-virtualenv venv to create your new environment (called 'venv' here) \\
-source venv/bin/activate to enter the virtual environment \\
+pip install virtualenv (if you don't already have virtualenv installed) <br>
+virtualenv venv to create your new environment (called 'venv' here) <br>
+source venv/bin/activate to enter the virtual environment <br>
 pip install -r requirements.txt to install the requirements in the current environment
 
