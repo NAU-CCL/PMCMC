@@ -69,6 +69,21 @@ def particlemcmc(data,pmcmc_params,pf_params,rng,req_jit = False,adaptive = Fals
 
 def particlemcmc_internal(data,num_particles,model_dim,init_params,init_cov,prior,iterations,rng,p_filter,adaptive,burn_in):
     '''
+    The internals of pmcmc. 
+
+    Args:
+      data: A (observation_dim,T) matrix of observations of the system. 
+      num_particles: The number of particles to use for the particle filter. 
+      model_dim: The number of state variables in the system of interest. 
+      init_params: The initial guess for the estimated parameters . 
+      init_cov: The initial covariance matrix for the proposal distribution. 
+      prior: A function which when evaluated yields the joint log probability of the current parameters under the prior. 
+      iterations: The number of metropolis-hastings steps. 
+      rng: The random number generator used in sampling. 
+      p_filter: The particle filter function. This will come from pf_validator. 
+      adaptive: A boolean telling the algorithm whether to use the adaptive mcmc.
+      burn_in: The number of iterations the run before turning on the adaptive covariance. Irrelevant if adaptive = False. 
+
     '''
 
     #Create matrices to hold the MLE of the particles and the observations as the algorithm progresses. 
