@@ -7,18 +7,40 @@ from typing import Dict
 from functools import partial
 
 def particlefilter(data:NDArray[np.float64],model_params:NDArray[np.float64],pf_params:Dict,rng:Generator,req_jit = False):
+    '''The public interface for the particle filter. The version of pf that will run is returned by the validator.
+    
+    Args:
+        data: A (observation_dim,T) matrix of observations of the system. 
+        model_params: Vector of system parameters, used in the observation density and transition density. 
+        pf_params: A dictionary of parameters used in the particle filter. 
+        rng: An instance of the NumPy Generator class. Used for random number generation. 
+        req_jit: Whether to request the particle filter to be jit compiled in Numba. 
+
+    Returns: 
+        A dictionary of the output of the particle filter. Keys are particle_distribution, representing the particle cloud at each time step. 
+        particle observations, similar as above but representing the observation realizations for each particle at each time step. Then log_weights and
+        Log_likelihood are the importance weights and the likelihood used in pMCMC. 
+
+        First 3 keys are (num_particles,T) and Log_Likelihood is (T,).
+    '''
+
+
+
     p_filter = pf_validator(data,model_params,pf_params,rng,req_jit) #mild shape enforcement and checking of parameters.
 
     particles,particle_observations,weights,likelihood = p_filter(
     data,
     model_params,
     rng = rng,
-    )
+    ) #Runs the particle filter
     
     return {'particle_distribution':particles,'particle_observations':particle_observations,'log_weights':weights,'Log_likelihood':likelihood}
 
 def pf_validator(data:NDArray[np.float64],model_params:NDArray[np.float64],pf_params:Dict,rng:Generator,req_jit:bool = False):
-    '''Checks if the arguments being passed to the particle filter are of the correct type and shape for the specified model.'''
+    '''Checks if the arguments being passed to the particle filter are of the correct type and shape for the specified model.
+    
+    Takes the same arguments as the public particlefilter interface function. The return is the specific version of pf the user requested. 
+    '''
     pf_params.setdefault('forecast_time', None)  # Set default value
 
     #First check the data shape is consistent with (m x T)
@@ -83,6 +105,8 @@ def filter_internal(data:NDArray[np.float64],model_params:NDArray[np.float64],
 
     Returns: 
         NumPy arrays representing the distribution of the particles, the observations, the weights, and the likelihood vector. 
+
+        First 3 (num_particles,T), last (T,)
     '''
 
     particles = np.zeros((num_particles,model_dim,data.shape[1]),dtype = np.float64)

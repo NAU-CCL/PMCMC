@@ -4,7 +4,21 @@ from particle_filter import pf_validator
 from numpy.linalg import cholesky,LinAlgError
 
 def pmcmc_validator(data,pmcmc_params,pf_params,rng,req_jit):
-    #Check mandatory keys for particle filtering specification.
+
+    '''
+    This function is used to check the user has included the correct parameters to run pMCMC. 
+
+    Args:
+        data: A (observation_dim,T) matrix of observations of the system. 
+        pmcmc_params: A dictionary of parameters and their values pertaining to pMCMC. 
+        pf_params: A dictionary of parameters and their values pertaining to the particle filter. 
+        req_jit: A boolean indicating whether to jit compile the particle filter. 
+
+    Returns: 
+        The specific version of the particle filter to be fed into the particlemcmc_internal for computation. 
+    '''
+
+    #Check mandatory pmcmc keys for particle filtering specification.
     key_list = ['iterations','init_params','prior','init_cov','burn_in'] 
     for key in key_list:
         if not (key in pmcmc_params.keys()):
@@ -13,11 +27,30 @@ def pmcmc_validator(data,pmcmc_params,pf_params,rng,req_jit):
     if((pmcmc_params['init_params'].shape[0] != pmcmc_params['init_cov'].shape[0]) or (pmcmc_params['init_params'].shape[0] != pmcmc_params['init_cov'].shape[1])):
         raise AttributeError('init_cov shape must match init_params.')
 
+    #Run the validator for particle_filter to check its parameters. 
     p_filter = pf_validator(data,pmcmc_params['init_params'],pf_params,rng,req_jit)
 
     return p_filter
 
 def particlemcmc(data,pmcmc_params,pf_params,rng,req_jit = False,adaptive = False): 
+    '''
+    This function is the public interface for pMCMC. It will first run the validator to obtain the particle filter function 
+    and then the pmcmc loop. 
+
+    Args: 
+        data: A (observation_dim,T) matrix of observations of the system. 
+        pmcmc_params: A dictionary of parameters and their values pertaining to pMCMC. 
+        pf_params: A dictionary of parameters and their values pertaining to the particle filter. 
+        req_jit: A boolean indicating whether to jit compile the particle filter. 
+        adaptive: A boolean indicating whether to use adaptive mcmc.  
+
+    Returns: 
+        A dictionary containing the output information of the pMCMC. The markov chain over the parameters is accepted_params, the associated log likelihoods are in Log Likelihood, 
+        and the particle and observation distributions from pf associated with the MLE are in MLE_particle_dist and MLE_particle_observations respectively. 
+
+    '''
+
+
     p_filter = pmcmc_validator(data,pmcmc_params,pf_params,rng,req_jit)
     param_set,LL,MLE_Particles,MLE_Observations = particlemcmc_internal(data,
                           num_particles = pf_params['num_particles'],
@@ -35,35 +68,27 @@ def particlemcmc(data,pmcmc_params,pf_params,rng,req_jit = False,adaptive = Fals
     return {'accepted_params':param_set,'Log Likelihood':LL,'MLE_particle_dist':MLE_Particles,'MLE_particle_observations':MLE_Observations}
 
 def particlemcmc_internal(data,num_particles,model_dim,init_params,init_cov,prior,iterations,rng,p_filter,adaptive,burn_in):
-    '''Initialize the particle distribution, observations and weights. 
-    
-    Args: 
-        iterations: Number of MCMC steps to run. 
-        num_particles: Number of particles to use for the underlying Monte Carlo estimate of the likelihood. 
-        init_theta: Initial guess of the parameter values to be inferred. 
-        prior: The Bayesian prior on the parameter vector theta. Takes theta as an argument and returns a probability. 
-        model: 
-
-    Returns: 
-        The vector of partial sums of δ.  
-
+    '''
     '''
 
-    MLE_Particles = np.zeros((num_particles,model_dim,data.shape[1]))
+    #Create matrices to hold the MLE of the particles and the observations as the algorithm progresses. 
+    MLE_Particles = np.zeros((num_particles,model_dim,data.shape[1])) 
     MLE_Observations = np.zeros((num_particles,data.shape[0],data.shape[1]),dtype=np.float64)
 
-    MLE = -50000
+    MLE = -5000000 #Start the MLE at a very small value.  
 
+    #Create matrices to hold the markov chain of theta and the current value of the log_likelihood. 
     theta = np.zeros((len(init_params),iterations))
     LL = np.zeros((iterations,))
 
+    #These two variables store covariance information for the adaptive step. 
     mu = np.zeros(len(init_params))
     cov = init_cov
 
     theta[:,0] = init_params
     LL[0] = prior(init_params) 
 
-    if(np.isfinite(LL[0])):
+    if(np.isfinite(LL[0])): #Only run the particle filter if the parameter value is within the support of the prior. 
         particles,particle_observations,weights,likelihood = p_filter(
                                 data = data,
                                 model_params= theta[:,0],
@@ -87,13 +112,13 @@ def particlemcmc_internal(data,num_particles,model_dim,init_params,init_cov,prio
             #print the acceptance rate and likelihood every 10 iterations
             print(f"iteration: {iter}" + f"| Acceptance rate: {np.sum(acc_record[:iter])/iter}" + f"| Log-Likelihood: {LL[iter-1]}" + f"| Proposal {theta[:,iter - 1]}")
 
-        '''Generating the next proposal using the cholesky decompostion'''
+        '''Generating the next proposal using the multivariate normal distribution'''
 
         theta_prop = rng.multivariate_normal(theta[:,iter - 1],(2.38**2/len(theta[:,iter - 1])) * cov)
 
         LL_new = prior(theta_prop)
 
-        if(np.isfinite(LL_new)):
+        if(np.isfinite(LL_new)): #Only run the particle filter if the parameter value is within the support of the prior. 
             particles,particle_observations,weights,likelihood = p_filter(
                                     data = data,
                                     model_params= theta_prop,
@@ -101,7 +126,7 @@ def particlemcmc_internal(data,num_particles,model_dim,init_params,init_cov,prio
             
             
             
-            LL_new += np.sum((likelihood))
+            LL_new += np.sum((likelihood)) #Likeihood from PF is given elementwise, so sum over the whole series. 
 
             '''Store the running maximum likelihood estimate'''
             if(LL_new > MLE):
@@ -121,7 +146,7 @@ def particlemcmc_internal(data,num_particles,model_dim,init_params,init_cov,prio
             theta[:,iter] = theta[:,iter - 1]
             LL[iter] = LL[iter-1]
 
-        if adaptive and (iter > burn_in):
+        if adaptive and (iter > burn_in): #Update the covariance if adaptive is on. 
             mu, cov = cov_update(cov,mu,theta[:,iter],iter,burn_in)
         
 
