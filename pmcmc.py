@@ -84,6 +84,9 @@ def particlemcmc_internal(data,num_particles,model_dim,init_params,init_cov,prio
       adaptive: A boolean telling the algorithm whether to use the adaptive mcmc.
       burn_in: The number of iterations the run before turning on the adaptive covariance. Irrelevant if adaptive = False. 
 
+      Returns:
+        Tuple of arrays representing the parameters, log likelihood, MLE of the particles and the MLE of the observations. 
+
     '''
 
     #Create matrices to hold the MLE of the particles and the observations as the algorithm progresses. 

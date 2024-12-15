@@ -141,7 +141,18 @@ def filter_internal(data:NDArray[np.float64],model_params:NDArray[np.float64],
 def log_resampling(particles,particle_observations,weights,rng): 
 
     '''Systematic resampling algorithm in log domain, the njit decorator is important here as it gives a significant speedup. Time 
-    complexity is O(n), as opposed to O(nlog(n)) in multinomial resampling. '''
+    complexity is O(n), as opposed to O(nlog(n)) in multinomial resampling. 
+    
+    Args:
+        particles: A slice of the particle array at time t. 
+        particle_observations: A slice of particle_observations at time t. 
+        weights: A slice of the weights array at time t. 
+        rng: The random number generator. 
+
+    Returns: 
+        The indices of the resampled particles. 
+
+    '''
 
     indices = np.zeros(len(weights),dtype = np.int_) #initialize array to hold the indices
     cdf = jacob(weights)

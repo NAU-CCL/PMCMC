@@ -60,8 +60,7 @@ data = np.expand_dims(rng.negative_binomial(n = model_params['R'],p = model_para
 
 '''Particle Filter Code'''
 def SIRH_model(particles,observations,t,dt,model_params,rng):
-    '''Definition of SEIR model as described in Calvetti's paper. Difference 
-    is the use of Tau leaping to introduce stochasticity into the system and continuous log-normal OU process definition for beta.'''
+    '''SIRH model'''
     hosp,R,mu,sig,lam = model_params
 
     gamma = 1/1000
@@ -114,8 +113,6 @@ def sirh_prior(theta):
     beta_logpdf(theta[3],alpha = 3.,beta = 10.) + \
     beta_logpdf(theta[4],alpha = 1.5, beta = 10.)
 
-
-'''estimated params hosp,D,R,mean_ou,sig'''
 
 pmcmc_params = {'iterations':100_000,
                 'init_params':np.array([0.3,0.01,-0.5,0.5,0.2]),
