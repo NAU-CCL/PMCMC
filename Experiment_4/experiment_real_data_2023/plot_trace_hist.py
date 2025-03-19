@@ -18,7 +18,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 data = pd.read_csv('./AZ_FLU_HOSPITALIZATIONS.csv',index_col = False).to_numpy().T[1]
 data = np.expand_dims(data[:200],0)
 
-
+'''Model definition for the PF, uses geometric brownian motion.'''
 def SIRH_model(particles,observations,t,dt,model_params,rng):
     '''Definition of SEIR model as described in Calvetti's paper. Difference 
     is the use of Tau leaping to introduce stochasticity into the system and continuous log-normal OU process definition for beta.'''
@@ -52,10 +52,12 @@ def SIRH_model(particles,observations,t,dt,model_params,rng):
 
     return particles,observations
 
+'''Observation function for the real data. Here we use poisson as the overdispersion was empirically observed to be small.'''
 def SIRH_Obs(data_point, particle_observations, model_params):
     weights = poisson_logpmf(k = data_point,mu = particle_observations[:,0] + 0.005)
     return weights
 
+'''Initializes the distribution of particles. 7,329,000 is the approximate population of Arizona. '''
 def SIRH_init(num_particles, model_dim, rng):
     particles_0 = np.zeros((num_particles,model_dim))
     particles_0[:,0] = 7_329_000
@@ -72,6 +74,8 @@ param_names = ['hosp','D','mean_ou','sig']
 
 times = [70,80,90,100,110,120,130,140,150,160,170,180]
 
+'''Runs the particle filter with the expectation of the PMCMC parameter distribution, for each time frame. The subsequent points are forecasted. 
+For the paper we omitted the forecast results so we used time 180 for the results. '''
 for run in range(len(times)):
     burn_in = 50_000
     output = np.load(f'Results/PMCMC_Output_{run}.npz')

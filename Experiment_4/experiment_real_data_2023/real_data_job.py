@@ -18,10 +18,8 @@ times = [70,80,90,100,110,120,130,140,150,160,170,180]
 data = pd.read_csv('./AZ_FLU_HOSPITALIZATIONS.csv',index_col = False).to_numpy().T[1]
 data = np.expand_dims(data[:times[int(argv[1])]],0)
 
-'''Particle Filter Code'''
+'''Model definition for the PF, uses geometric brownian motion.'''
 def SIRH_model(particles,observations,t,dt,model_params,rng):
-    '''Definition of SEIR model as described in Calvetti's paper. Difference 
-    is the use of Tau leaping to introduce stochasticity into the system and continuous log-normal OU process definition for beta.'''
     hosp,D,mu,sig = model_params
 
     gamma = 1/1000
@@ -52,10 +50,12 @@ def SIRH_model(particles,observations,t,dt,model_params,rng):
 
     return particles,observations
 
+'''Observation function for the real data. Here we use poisson as the overdispersion was empirically observed to be small.'''
 def SIRH_Obs(data_point, particle_observations, model_params):
     weights = poisson_logpmf(k = data_point,mu = particle_observations[:,0] + 0.005)
     return weights
 
+'''Initializes the distribution of particles. 7,329,000 is the approximate population of Arizona. '''
 def SIRH_init(num_particles, model_dim, rng):
     particles_0 = np.zeros((num_particles,model_dim))
     particles_0[:,0] = 7_329_000
@@ -68,7 +68,7 @@ def SIRH_init(num_particles, model_dim, rng):
     
     return particles_0
 
-
+'''Uniform prior for all the parameters in PMCMC.'''
 def sirh_prior(theta):
     return uniform_logpdf(theta[0],min_val= 0.,max_val= 0.5) + \
     uniform_logpdf(theta[1],min_val = 0.,max_val = 0.5) + \
@@ -76,14 +76,14 @@ def sirh_prior(theta):
     uniform_logpdf(theta[3],min_val = 0.,max_val = 5.)
 
 
-'''estimated params hosp,D,mean_ou,sig'''
-
+'''Hyperparameters for the PMCMC'''
 pmcmc_params = {'iterations':200_000,
                 'init_params':np.array([0.3,0.1,-0.6,0.5]),
                 'prior':sirh_prior,
                 'init_cov':  np.diag([0.001,0.001,0.001,0.001]),
                 'burn_in':1_000}
 
+'''Hyperparameters for the particle filter'''
 pf_params = {'num_particles':1000, 
                       'dt':0.1,
                       'model':SIRH_model,
@@ -92,6 +92,7 @@ pf_params = {'num_particles':1000,
                       'particle_initializer':SIRH_init
                       }
 
+'''Runs the pmcmc, outputs a dictionary of information about the run.'''
 pmcmc_output = particlemcmc(
                   data = data,
                   pmcmc_params=pmcmc_params,
@@ -101,6 +102,7 @@ pmcmc_output = particlemcmc(
                   req_jit=True
                   )
 
+'''Saves the results to an npz file.'''
 np.savez_compressed(f'Results/PMCMC_Output_{int(argv[1])}.npz',
 data = data,
 accepted_params = pmcmc_output['accepted_params'],
