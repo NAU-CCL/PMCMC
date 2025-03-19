@@ -1,4 +1,4 @@
-# %%
+
 import sys
 from sys import argv
 
@@ -15,12 +15,10 @@ from math_utils import nbinom_logpmf,norm_logpmf,beta_logpdf,uniform_logpdf,pois
 
 from matplotlib.backends.backend_pdf import PdfPages
 
-# %%
 data = pd.read_csv('./AZ_FLU_HOSPITALIZATIONS.csv',index_col = False).to_numpy().T[1]
 data = np.expand_dims(data[:200],0)
 
 
-# %%
 def SIRH_model(particles,observations,t,dt,model_params,rng):
     '''Definition of SEIR model as described in Calvetti's paper. Difference 
     is the use of Tau leaping to introduce stochasticity into the system and continuous log-normal OU process definition for beta.'''
@@ -69,9 +67,6 @@ def SIRH_init(num_particles, model_dim, rng):
     particles_0[:,4] = rng.uniform(0.0,0.4, size = (num_particles,))
     
     return particles_0
-
-
-# %%
 
 param_names = ['hosp','D','mean_ou','sig']
 

@@ -1,3 +1,5 @@
+'''This is the job file for each run of experiment 1.'''
+
 import sys
 from sys import argv
 
@@ -28,21 +30,25 @@ I = 100
 '''model params''' 
 model_params = {'gamma':1/1000,'L':0.,'D':1/7,'hosp':1/10,'R':100,'sig_state':0.005}
 
-'''OU params'''
+'''OU parameters'''
 OU_params = {'lam':1/35,'mean_ou':-1.3,'sig':0.4}
 
+'''Discretization of the log-OU process'''
 A = np.exp(-OU_params['lam'] * dt)
 M = OU_params['mean_ou'] * (np.exp(-OU_params['lam'] * dt) - 1)
 C = OU_params['sig'] * np.sqrt(1 - np.exp(-2 * OU_params['lam'] * dt))
 
+'''Generate a sample path of the log OU process to substitute into the model.'''
 betas = np.zeros_like(t_vec)
 betas[0] = 0.4
 for time_index in range(1,len(t_vec)):
     betas[time_index] = np.exp(A * np.log(betas[time_index - 1]) - M + C * rng.normal(0,1))
 
+'''Create an empty state vector to house the data. '''
 state = np.zeros((4,len(t_vec)))
 state[:,0] = np.array([N - I,I,0,0])
 
+'''Simulate the system to obtain the data. Uses geometric brownian motion to stochastically simulate the system.'''
 for time_index in range(1,len(t_vec)):
    new_S = ((model_params['L'] * state[3,time_index-1]) * dt)
    new_I = ((betas[time_index - 1] * (state[0,time_index-1] * state[1,time_index-1])/np.sum(state[:,time_index-1])) * dt)
@@ -55,10 +61,11 @@ for time_index in range(1,len(t_vec)):
    state[2,time_index] = state[2,time_index-1] + new_IH - new_HR + model_params['sig_state'] * state[2,time_index] * rng.normal(0,np.sqrt(dt))
    state[3,time_index] = state[3,time_index-1] + new_HR + new_IR - new_S + model_params['sig_state'] * state[3,time_index]  *rng.normal(0,np.sqrt(dt))
 
+'''The data is the H compartment with negative binomial noise applied.'''
 data = np.expand_dims(rng.negative_binomial(n = model_params['R'],p = model_params['R']/(model_params['R'] + state[2,::int(1/dt)] + 0.005)),0)
 
 
-'''Particle Filter Code'''
+'''Model definition for the PMCMC, uses geometric brownian motion to be in line with the test system.'''
 def SIRH_model(particles,observations,t,dt,model_params,rng):
     '''SIRH model'''
     hosp,R,mu,sig,lam = model_params
@@ -91,11 +98,14 @@ def SIRH_model(particles,observations,t,dt,model_params,rng):
 
     return particles,observations
 
+'''The observation function for the PMCMC. Uses negative binomial noise. '''
 def SIRH_Obs(data_point, particle_observations, model_params):
     r = 1/model_params[1]
     weights = nbinom_logpmf(x = data_point,p = r/(r + particle_observations[:,0] + 0.005),n = np.array([r]))
     return weights
 
+'''Function to initialize the particle distribution to time zero. Only the S and I compartments are assumed to be nonzero to start.
+Beta is initialized randomly between 0 and 1.'''
 def SIRH_init(num_particles, model_dim, rng):
     particles_0 = np.zeros((num_particles,model_dim))
     particles_0[:,0] = 1_000_000
@@ -106,6 +116,7 @@ def SIRH_init(num_particles, model_dim, rng):
     
     return particles_0
 
+'''Prior over the parameters for PMCMC.'''
 def sirh_prior(theta):
     return uniform_logpdf(theta[0],min_val= 0.,max_val= 1.) + \
     uniform_logpdf(theta[1],min_val = 1/1000.,max_val = 1/5.) + \
@@ -113,13 +124,14 @@ def sirh_prior(theta):
     beta_logpdf(theta[3],alpha = 3.,beta = 10.) + \
     beta_logpdf(theta[4],alpha = 1.5, beta = 10.)
 
-
+'''Hyperparamters of PMCMC'''
 pmcmc_params = {'iterations':100_000,
                 'init_params':np.array([0.3,0.01,-0.5,0.5,0.2]),
                 'prior':sirh_prior,
                 'init_cov':  np.diag([0.001,0.001,0.001,0.001,0.001]),
                 'burn_in':1_000}
 
+'''Hyperparameters of PF'''
 pf_params = {'num_particles':1000, 
                       'dt':0.1,
                       'model':SIRH_model,
@@ -128,6 +140,8 @@ pf_params = {'num_particles':1000,
                       'particle_initializer':SIRH_init
                       }
 print("Starting PMCMC")
+
+'''Where pmcmc is actually run. pmcmc_output is a dictionary containing all the results from the run.'''
 pmcmc_output = particlemcmc(
                   data = data,
                   pmcmc_params=pmcmc_params,
@@ -137,7 +151,7 @@ pmcmc_output = particlemcmc(
                   req_jit=True
                   )
 
-
+'''Saves the data to a npz file. '''
 np.savez_compressed(f'Results/PMCMC_Output_{int(argv[1])}.npz',
 data = data,
 state = state,

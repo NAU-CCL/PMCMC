@@ -42,18 +42,23 @@ I = 10
 print(f"Expectation of OU Process: {np.exp(OU_params['mean_ou'] + (OU_params['sig']**2)/2)}")
 print(f"Variance of OU Process: {np.exp(OU_params['sig']**2 - 1) * np.exp(2 * OU_params['mean_ou'] + OU_params['sig']**2)}")
 
+'''Discretization of the log-OU process'''
 A = np.exp(-OU_params['lam'] * dt)
 M = OU_params['mean_ou'] * (np.exp(-OU_params['lam'] * dt) - 1)
 C = OU_params['sig'] * np.sqrt(1 - np.exp(-2 * OU_params['lam'] * dt))
 
+'''Generate a sample path of the log OU process to substitute into the model.'''
 betas = np.zeros_like(t_vec)
 betas[0] = 0.4
 for time_index in range(1,len(t_vec)):
     betas[time_index] = np.exp(A * np.log(betas[time_index - 1]) - M + C * rng.normal(0,1))
 
+'''Create an empty state vector to house the data. '''
 state = np.zeros((4,len(t_vec)))
 state[:,0] = np.array([N - I,I,0,0])
 
+
+'''Simulate the system to obtain the data. Uses geometric brownian motion to stochastically simulate the system.'''
 for time_index in range(1,len(t_vec)):
    new_S = ((model_params['L'] * state[3,time_index-1]) * dt)
    new_I = ((betas[time_index - 1] * (state[0,time_index-1] * state[1,time_index-1])/np.sum(state[:,time_index-1])) * dt)
@@ -66,19 +71,17 @@ for time_index in range(1,len(t_vec)):
    state[2,time_index] = np.maximum(0.,state[2,time_index-1] + new_IH - new_HR)
    state[3,time_index] = np.maximum(0.,state[3,time_index-1] + new_HR + new_IR - new_S)
 
+'''The data is the H compartment with negative binomial noise applied.'''
 data = np.expand_dims(rng.negative_binomial(n = model_params['R'],p = model_params['R']/(model_params['R'] + state[2,::int(1/dt)] + 0.005)),0)
 
-'''Particle Filter Code'''
+'''Model definition for the PF, uses geometric brownian motion to be in line with the test system.'''
 def SIRH_model(particles,observations,t,dt,model_params,rng):
-    '''Definition of SEIR model as described in Calvetti's paper. Difference 
-    is the use of Tau leaping to introduce stochasticity into the system and continuous log-normal OU process definition for beta.'''
     D,gamma,L,hosp,R,sig_state,mu,sig,lam = model_params
 
     A = np.exp(-lam * dt)
     M = mu * (np.exp(-lam * dt) - 1)
     C = sig * np.sqrt(1 - np.exp(-2 * lam * dt))
 
-    '''Tau leaping. Non estimated parameters are hard coded. '''
 
     for index in range(particles.shape[0]):
 
@@ -98,11 +101,14 @@ def SIRH_model(particles,observations,t,dt,model_params,rng):
 
     return particles,observations
 
+'''The observation function for the PF. Uses negative binomial noise. '''
 def SIRH_Obs(data_point, particle_observations, model_params):
     r = 1/model_params[4]
     weights = nbinom_logpmf(x = data_point,p = r/(r + particle_observations[:,0] + 0.005),n = np.array([r]))
     return weights
 
+'''Function to initialize the particle distribution to time zero. Only the S and I compartments are assumed to be nonzero to start.
+Beta is initialized randomly between 0 and 1.'''
 def SIRH_init(num_particles, model_dim, rng):
     particles_0 = np.zeros((num_particles,model_dim))
     particles_0[:,0] = 1_000_000
@@ -114,6 +120,7 @@ def SIRH_init(num_particles, model_dim, rng):
 
     return particles_0
 
+'''Hyperparamter for PF'''
 pf_params = {'num_particles':10_000, 
                       'dt':dt,
                       'model':SIRH_model,
@@ -122,6 +129,7 @@ pf_params = {'num_particles':10_000,
                       'particle_initializer':SIRH_init,
                       }
 
+'''Where the PF is run, output is a dictionary containing the output of the PF. '''
 output = particlefilter(data = data,
         model_params= (model_params['D'],
         model_params['gamma'],
@@ -138,6 +146,7 @@ output = particlefilter(data = data,
         )
 
 
+'''Saves results to npz file.'''
 np.savez_compressed(f'./Experiment_3/results/results_trueT_{decorrelation_time}_wrongT_{deco_wrong}_days_run_{run}.npz',particle_distribution = output['particle_distribution'],
 particle_observations = output['particle_observations'],
 log_weights = output['log_weights'],
